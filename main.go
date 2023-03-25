@@ -13,14 +13,14 @@ import (
 )
 
 // func root(w http.ResponseWriter, r *http.Request) {
-	// data, tmpl := mdHandler.HandleFile("test.md")
-	// tmpl.Execute(w, data)
+// data, tmpl := mdHandler.HandleFile("test.md")
+// tmpl.Execute(w, data)
 // }
 
-func readme(w http.ResponseWriter, r *http.Request) {
-	data, tmpl := mdHandler.HandleFile("README.md")
-	tmpl.Execute(w, data)
-}
+// func readme(w http.ResponseWriter, r *http.Request) {
+	// data, tmpl := mdHandler.HandleFile("README.md")
+	// tmpl.Execute(w, data)
+// }
 
 func requestLog(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -30,13 +30,14 @@ func requestLog(h http.Handler) http.Handler {
 }
 
 func main() {
-	mdHandler.HandleFile("test.md")
+	//mdHandler.HandleFile("test.md")
+	mdHandler.HandleDir("data")
 	// fileServer is a handler that makes that path of the server as file server.
 	fileServer := http.FileServer(http.Dir("./site"))
 	// ????? what does mux do???
 	mux := http.NewServeMux()
 	// mux.HandleFunc("/", root) // HandleFunc serves a function of input type ( http.ResponseWrite, *http.Request) at the given path
-	mux.HandleFunc("/readme", readme)
+	//mux.HandleFunc("/readme", readme)
 	// fsHandler := http.StripPrefix("/files", fileServer)
 	//mux.Handle("/files", fsHandler) // Handle serves a handler at the given path
 	mux.Handle("/", fileServer) // Handle serves a handler at the given path
