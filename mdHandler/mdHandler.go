@@ -15,7 +15,7 @@ type dataHTML struct {
 	PageBody  template.HTML
 }
 
-func HandleFile(fileName string) (dataHTML, *template.Template) {
+func HandleFile(fileName string, templateFileName string) (dataHTML, *template.Template) {
 	fmt.Println("Inside mdHandler")
 	mdFileData, err := os.ReadFile(fileName)
 	util.CheckErr(err)
@@ -24,7 +24,7 @@ func HandleFile(fileName string) (dataHTML, *template.Template) {
 		PageTitle: "test",
 		PageBody:  template.HTML(mdHTML),
 	}
-	tmpl := template.Must(template.ParseFiles("layout.html"))
+	tmpl := template.Must(template.ParseFiles(templateFileName))
 	fn := fileName[:len(fileName)-3]
 	err = os.MkdirAll("site/"+fn, os.ModePerm)
 	util.CheckErr(err)
@@ -35,7 +35,7 @@ func HandleFile(fileName string) (dataHTML, *template.Template) {
 	return pageData, tmpl
 }
 
-func HandleDir(dirName string) {
+func HandleDir(dirName string, templateFileName string) {
 	files, err := os.ReadDir(dirName)
 	util.CheckErr(err)
 	for _, file := range files {
@@ -48,7 +48,7 @@ func HandleDir(dirName string) {
 			PageTitle: "test",
 			PageBody:  template.HTML(mdHTML),
 		}
-		tmpl := template.Must(template.ParseFiles("layout.html"))
+		tmpl := template.Must(template.ParseFiles(templateFileName))
 		fn := fileName[:len(fileName)-3]
 		err = os.MkdirAll("site/"+ fn, os.ModePerm)
 		util.CheckErr(err)
