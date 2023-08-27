@@ -24,6 +24,8 @@ type postConfig struct {
 	Description string
 }
 
+var postCfg_ []postConfig
+
 func ParseCfg(fileName string) postConfig {
 	tomlData, err := os.ReadFile(fileName)
 	util.CheckErr(err)
@@ -61,7 +63,7 @@ func ParsePost(postName string, templateFileName string) {
 
 	mdFile := "NULL"
 	cfgFile := "NULL"
-	mdFileRaw := "NULL"
+	//mdFileRaw := "NULL"
 
 	/* iterate through all the files in the directory */
 	for _, file := range files {
@@ -73,7 +75,7 @@ func ParsePost(postName string, templateFileName string) {
 		if fileType == ".md" {
 			// exec md file stuff
 			mdFile = GetFileNameWithPath(fileName, postName)
-			mdFileRaw = fileName
+			//mdFileRaw = fileName
 		} else if fileType == ".toml" {
 			// exec cfg stuff here
 			cfgFile = GetFileNameWithPath(fileName, postName)
@@ -91,6 +93,8 @@ func ParsePost(postName string, templateFileName string) {
 	pageData.PageTitle = cfgData.Title
 	pageData.PageDescription = cfgData.Description
 
+	postCfg_ = append(postCfg_, cfgData)
+
 	log.Println("desc,", pageData.PageDescription)
 	log.Println("title,", pageData.PageTitle)
 
@@ -100,7 +104,8 @@ func ParsePost(postName string, templateFileName string) {
 
 	tmpl := template.Must(template.ParseFiles(templateFileName))
 
-	fn := mdFileRaw[:len(mdFileRaw)-3]
+	log.Println("creating directory ", pageData.PageTitle)
+	fn := pageData.PageTitle
 	err = os.MkdirAll("site/"+fn, os.ModePerm)
 	util.CheckErr(err)
 
@@ -110,13 +115,19 @@ func ParsePost(postName string, templateFileName string) {
 	tmpl.Execute(htmlFileIO, pageData)
 }
 
-func HandleDir(dirName string, templateFileName string) {
+func HandleDir(dirName string, markdownTemplate string, blogTemplate string) {
 	files, err := os.ReadDir(dirName)
 	util.CheckErr(err)
 	for _, file := range files {
 		fileName := file.Name()
 		fileNameDir := dirName + "/" + fileName
 
-		ParsePost(fileNameDir, templateFileName)
+		ParsePost(fileNameDir, markdownTemplate)
 	}
+
+	/* create blog index file from html template */
+	tmpl := template.Must(template.ParseFiles(blogTemplate))
+	blogFileIO, err := os.Create("blog.html")
+	util.CheckErr(err)
+	tmpl.Execute(blogFileIO, postCfg_)
 }

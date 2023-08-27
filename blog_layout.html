@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Webpages List</title>
+</head>
+<body>
+    <h1>List of Webpages</h1>
+    {{range .}}
+    <p>
+    <a href="/blog/{{.Title}}">{{.Title}}</a>
+    {{.Description}}
+    </p>
+    {{end}}
+</body>
+</html>
