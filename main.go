@@ -4,8 +4,8 @@ import (
 	"log"
 	"net/http"
 
+	"srv/cfgParser"
 	"srv/mdHandler"
-    "srv/cfgParser"
 )
 
 func requestLog(h http.Handler) http.Handler {
@@ -16,11 +16,13 @@ func requestLog(h http.Handler) http.Handler {
 }
 
 func main() {
-    cfgFields := cfgParser.Parse()
+	cfgFields := cfgParser.Parse()
+
 	mdHandler.HandleDir("data", cfgFields.Template)
+
 	fileServer := http.FileServer(http.Dir("./site"))
 	mux := http.NewServeMux()
 	mux.Handle("/", fileServer) // Handle serves a handler at the given path
-    log.Println("Starting server at port: " + cfgFields.Port)
-	log.Fatal(http.ListenAndServe(":" + cfgFields.Port, requestLog(mux)))
+	log.Println("Starting server at port: " + cfgFields.Port)
+	log.Fatal(http.ListenAndServe(":"+cfgFields.Port, requestLog(mux)))
 }

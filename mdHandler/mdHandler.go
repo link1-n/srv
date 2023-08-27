@@ -3,36 +3,111 @@ package mdHandler
 import (
 	"fmt"
 	"html/template"
+	"log"
 	"os"
+	"path/filepath"
 
 	"srv/util"
 
+	"github.com/BurntSushi/toml"
 	bf "github.com/russross/blackfriday/v2"
 )
 
 type dataHTML struct {
-	PageTitle string
-	PageBody  template.HTML
+	PageTitle       string
+	PageDescription string
+	PageBody        template.HTML
 }
 
-func HandleFile(fileName string, templateFileName string) (dataHTML, *template.Template) {
+type postConfig struct {
+	Title       string
+	Description string
+}
+
+func ParseCfg(fileName string) postConfig {
+	tomlData, err := os.ReadFile(fileName)
+	util.CheckErr(err)
+
+	var cfg postConfig
+	err = toml.Unmarshal(tomlData, &cfg)
+	util.CheckErr(err)
+
+	return cfg
+}
+
+func HandleMdFile(fileName string) []byte {
 	fmt.Println("Inside mdHandler")
 	mdFileData, err := os.ReadFile(fileName)
 	util.CheckErr(err)
+
 	mdHTML := bf.Run(mdFileData)
-	pageData := dataHTML{
-		PageTitle: "test",
-		PageBody:  template.HTML(mdHTML),
+
+	return mdHTML
+}
+
+func GetFileNameWithPath(fileName string, dirName string) string {
+	return dirName + "/" + fileName
+}
+
+func ParsePost(postName string, templateFileName string) {
+	/*
+		read all files in the directory
+		process html into markdown
+		process config details (post name, date, author, description)
+		then convert .md file into html with config info
+	*/
+	files, err := os.ReadDir(postName)
+	util.CheckErr(err) // program will exit here if error
+
+	mdFile := "NULL"
+	cfgFile := "NULL"
+	mdFileRaw := "NULL"
+
+	/* iterate through all the files in the directory */
+	for _, file := range files {
+		fileName := file.Name()
+		fileType := filepath.Ext(fileName)
+
+		fmt.Println("file,", fileName, ",fileType,", fileType)
+
+		if fileType == ".md" {
+			// exec md file stuff
+			mdFile = GetFileNameWithPath(fileName, postName)
+			mdFileRaw = fileName
+		} else if fileType == ".toml" {
+			// exec cfg stuff here
+			cfgFile = GetFileNameWithPath(fileName, postName)
+		}
 	}
+
+	/* get details from cfg and add it to html struct then pass struct
+	to handle md function and execute template struct in the end */
+	log.Println("mdFile,", mdFile)
+	log.Println("cfgFile,", cfgFile)
+	var pageData dataHTML
+
+	/* parse cfg */
+	cfgData := ParseCfg(cfgFile)
+	pageData.PageTitle = cfgData.Title
+	pageData.PageDescription = cfgData.Description
+
+	log.Println("desc,", pageData.PageDescription)
+	log.Println("title,", pageData.PageTitle)
+
+	/* parse md */
+	htmlData := HandleMdFile(mdFile)
+	pageData.PageBody = template.HTML(htmlData)
+
 	tmpl := template.Must(template.ParseFiles(templateFileName))
-	fn := fileName[:len(fileName)-3]
+
+	fn := mdFileRaw[:len(mdFileRaw)-3]
 	err = os.MkdirAll("site/"+fn, os.ModePerm)
 	util.CheckErr(err)
+
 	htmlFileIO, err := os.Create("site/" + fn + "/index.html")
 	util.CheckErr(err)
-	tmpl.Execute(htmlFileIO, pageData)
 
-	return pageData, tmpl
+	tmpl.Execute(htmlFileIO, pageData)
 }
 
 func HandleDir(dirName string, templateFileName string) {
@@ -40,20 +115,8 @@ func HandleDir(dirName string, templateFileName string) {
 	util.CheckErr(err)
 	for _, file := range files {
 		fileName := file.Name()
-		fileNameDir := dirName + "/" + file.Name()
-		mdFileData, err := os.ReadFile(fileNameDir)
-		util.CheckErr(err)
-		mdHTML := bf.Run(mdFileData)
-		pageData := dataHTML{
-			PageTitle: "test",
-			PageBody:  template.HTML(mdHTML),
-		}
-		tmpl := template.Must(template.ParseFiles(templateFileName))
-		fn := fileName[:len(fileName)-3]
-		err = os.MkdirAll("site/"+ fn, os.ModePerm)
-		util.CheckErr(err)
-		htmlFileIO, err := os.Create("site/" + fn + "/index.html")
-		util.CheckErr(err)
-		tmpl.Execute(htmlFileIO, pageData)
+		fileNameDir := dirName + "/" + fileName
+
+		ParsePost(fileNameDir, templateFileName)
 	}
 }
